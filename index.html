@@ -10,6 +10,7 @@
       background: linear-gradient(135deg, #e0eafc, #cfdef3);
       margin: 0;
       padding: 40px 10px;
+      font-size: 85%;
     }
     .container {
       max-width: 900px;
@@ -21,7 +22,7 @@
       backdrop-filter: blur(10px);
     }
     h1 {
-      text-align: center;
+      text-align: left;
       margin-bottom: 30px;
       color: #333;
     }
@@ -138,7 +139,13 @@
       <button onclick="mergeImages()">합치기</button>
     </div>
 
-    <div id="result-container"></div>
+    <div id="result-container">
+      <p>완성된 이미지 미리보기:</p>
+      <div class="preview">
+        <img id="merged-image-preview" src="" alt="완성된 이미지 미리보기" />
+      </div>
+      <a id="download-link" href="#" download>다운로드</a>
+    </div>
   </div>
 
   <script>
@@ -147,6 +154,9 @@
     const autoInput = document.getElementById("autoInput");
     const fileInput = document.getElementById("fileInput");
     const widthInput = document.getElementById("widthInput");
+    const resultContainer = document.getElementById("result-container");
+    const mergedImagePreview = document.getElementById("merged-image-preview");
+    const downloadLink = document.getElementById("download-link");
 
     let targetWidth = parseInt(widthInput.value);
 
@@ -158,6 +168,7 @@
         orderedInputs.style.display = "none";
         autoInput.style.display = "block";
       }
+      resetResults();
     }
 
     function applyWidth() {
@@ -168,6 +179,12 @@
       } else {
         alert("100~1000 사이의 숫자를 입력하세요.");
       }
+    }
+
+    function resetResults() {
+      resultContainer.style.display = "none";
+      mergedImagePreview.src = "";
+      downloadLink.href = "";
     }
 
     function sortFilesByNumber(files) {
@@ -186,6 +203,32 @@
         if (numA === numB) return subA - subB;
         return numA - numB;
       });
+    }
+
+    async function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function resizeImage(img, width) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const scale = width / img.width;
+      canvas.width = width;
+      canvas.height = img.height * scale;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      return canvas;
     }
 
     async function mergeImages() {
@@ -226,44 +269,10 @@
       const format = document.getElementById("format").value;
       const dataUrl = canvas.toDataURL(format);
 
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "merged." + (format === "image/png" ? "png" : "jpg");
-      link.textContent = "다운로드하기";
+      mergedImagePreview.src = dataUrl;
+      downloadLink.href = dataUrl;
 
-      const resultContainer = document.getElementById("result-container");
-      resultContainer.innerHTML = "<p>합치기 완료!</p>";
-      resultContainer.appendChild(link);
       resultContainer.style.display = "block";
-    }
-
-    function loadImage(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function resizeImage(img, width) {
-      const scale = width / img.width;
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      return new Promise(resolve => {
-        const resized = new Image();
-        resized.onload = () => resolve(resized);
-        resized.src = canvas.toDataURL();
-      });
     }
   </script>
 </body>
