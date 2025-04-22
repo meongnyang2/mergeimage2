@@ -1,49 +1,155 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 합치기</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이미지 세로 합치기</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #f0f4f8, #d9e2ec);
+      margin: 0;
+      padding: 40px 10px;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 30px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e0e6ed;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    input[type="number"], select, input[type="file"] {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #357ab8;
+    }
+    .image-inputs input {
+      display: block;
+      margin-bottom: 10px;
+    }
+    .preview img {
+      display: block;
+      margin: 0;
+      padding: 0;
+      border: none;
+      max-width: 100%;
+      vertical-align: top;
+      image-rendering: pixelated;
+    }
+    #result-container {
+      margin-top: 20px;
+      display: none;
+      text-align: center;
+    }
+    #result-container span {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    #downloadLink {
+      background: #27ae60;
+      padding: 8px 16px;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+    #downloadLink:hover {
+      background: #1e8449;
+    }
+    #customMessageBox {
+      font-weight: bold;
+      background-color: #444;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>이미지 세로 합치기</h1>
 
-    <div class="container">
-        <h1>이미지 합치기</h1>
-        <p>1.jpg, 2.jpg 또는 이미지1.png, 이미지2.png와 같이 파일명에 숫자가 포함되어 있을 경우, 숫자 기준으로 오름차순 정렬 후 자동 합쳐집니다.</p>
-        
-        <div class="menu">
-            <button id="mergeButton1">순서대로 합치기</button>
-            <button id="mergeButton2">파일명 숫자 기준 자동 합치기</button>
-        </div>
-
-        <!-- 가로 사이즈 설정 -->
-        <label for="widthInput">가로 사이즈 (100~1000px):</label>
-        <input type="number" id="widthInput" min="100" max="1000">
-
-        <!-- 이미지 업로드 -->
-        <div class="file-upload" id="fileUpload1">
-            <input type="file" id="file1" accept="image/*">
-            <input type="file" id="file2" accept="image/*">
-            <input type="file" id="file3" accept="image/*">
-            <input type="file" id="file4" accept="image/*">
-            <input type="file" id="file5" accept="image/*">
-            <input type="file" id="file6" accept="image/*">
-            <input type="file" id="file7" accept="image/*">
-            <input type="file" id="file8" accept="image/*">
-            <input type="file" id="file9" accept="image/*">
-            <input type="file" id="file10" accept="image/*">
-        </div>
-
-        <button id="mergeImages">합치기</button>
-
-        <!-- 미리보기 -->
-        <div class="preview" id="preview">
-            <h3>미리보기:</h3>
-            <img id="mergedImage" src="" alt="합쳐진 이미지">
-        </div>
+    <div class="section">
+      <label for="mergeType">합치기 방식 선택:</label>
+      <select id="mergeType" onchange="toggleMergeType()">
+        <option value="ordered">순서대로 합치기</option>
+        <option value="auto">파일명 숫자 기준 자동 합치기</option>
+      </select>
     </div>
 
-    <script src="script.js"></script>
+    <div class="section" id="width-control">
+      <label>가로 사이즈 (100~1000px):</label>
+      <input type="number" id="widthInput" min="100" max="1000" value="780" />
+      <button onclick="applyWidth()">적용하기</button>
+    </div>
+
+    <div class="section">
+      <label>저장 형식:</label>
+      <select id="format">
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/png">PNG</option>
+      </select>
+      <button onclick="mergeImages()">합치기</button>
+    </div>
+
+    <div class="section" id="orderedInputs">
+      <label>순서대로 합치기 (최대 10개 파일까지):</label>
+      <div class="image-inputs">
+        <input type="file" id="file1" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file2" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file3" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file4" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file5" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file6" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file7" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file8" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file9" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" id="file10" accept="image/png, image/jpeg" onchange="clearPreview()" />
+      </div>
+    </div>
+
+    <div class="section" id="autoInput" style="display: none;">
+      <label>파일 업로드:</label>
+      <input type="file" id="fileInput" multiple accept="image/png, image/jpeg" onchange="clearPreview()" />
+      <p style="font-size: 0.9rem; color: #555">EX. 1.jpg, 2.jpg 또는 이미지1.png, 이미지2.png 와 같이 파일명에 숫자가 포함되어 있을 경우, 숫자 기준으로 오름차순 정렬 후 자동 합쳐집니다.<br>새로운 작업을 원할 시 새로고침(F5)을 눌러주세요.</p>
+    </div>
+
+    <div id="result-container">
+      <span>이미지 생성되었습니다.</span>
+      <a id="downloadLink" href="#" download="merged-image.jpg">다운로드</a>
+    </div>
+
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <!-- 기존 스크립트는 유지하며 추가 스크립트는 아래에 연결할 수 있습니다. -->
 </body>
 </html>
