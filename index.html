@@ -28,19 +28,23 @@
     .section {
       margin-bottom: 25px;
     }
-    .section label {
+    label {
       font-weight: bold;
       display: block;
       margin-bottom: 8px;
     }
     input[type="number"],
-    select,
-    input[type="file"] {
+    select {
       padding: 8px;
       border-radius: 6px;
       border: 1px solid #ccc;
       width: 100%;
       max-width: 300px;
+    }
+    input[type="file"] {
+      margin-bottom: 5px;
+      border: none;
+      width: 100%;
     }
     button {
       padding: 10px 20px;
@@ -53,10 +57,6 @@
     }
     button:hover {
       background-color: #357ab8;
-    }
-    .image-inputs input {
-      display: block;
-      margin-bottom: 10px;
     }
     .preview img {
       display: block;
@@ -75,12 +75,6 @@
       border-radius: 10px;
       text-align: center;
       box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
-    }
-    #result-container a {
-      display: inline-block;
-      margin-top: 10px;
-      color: #4a90e2;
-      text-decoration: underline;
     }
   </style>
 </head>
@@ -102,7 +96,7 @@
       <button onclick="applyWidth()">적용하기</button>
     </div>
 
-    <div class="section">
+    <div class="section" id="format-control">
       <label>저장 형식:</label>
       <select id="format">
         <option value="image/jpeg">JPEG</option>
@@ -113,61 +107,88 @@
     <div class="section" id="orderedInputs">
       <label>순서대로 합치기 (최대 10개 파일까지):</label>
       <div class="image-inputs">
-        <input type="file" accept="image/*" id="file1" />
-        <input type="file" accept="image/*" id="file2" />
-        <input type="file" accept="image/*" id="file3" />
-        <input type="file" accept="image/*" id="file4" />
-        <input type="file" accept="image/*" id="file5" />
-        <input type="file" accept="image/*" id="file6" />
-        <input type="file" accept="image/*" id="file7" />
-        <input type="file" accept="image/*" id="file8" />
-        <input type="file" accept="image/*" id="file9" />
-        <input type="file" accept="image/*" id="file10" />
+        <input type="file" accept="image/*" multiple id="orderedFiles" />
       </div>
     </div>
 
     <div class="section" id="autoInput" style="display: none;">
-      <label>파일명 숫자 기준 자동 합치기:</label>
-      <input type="file" id="fileInput" multiple accept="image/*" />
-      <p style="font-size: 0.9em; color: #555">예: 1.jpg, 2.jpg 또는 이미지1.png, 이미지2.png 처럼 숫자 포함 파일명을 기준으로 자동 정렬 후 합쳐집니다.<br>괄호 있는 숫자는 뒤로 정렬됩니다. 새 작업은 새로고침(F5)하세요.</p>
+      <label>자동 정렬 합치기 (여러 파일 첨부 가능):</label>
+      <input type="file" accept="image/*" multiple id="autoFiles" />
     </div>
 
     <div class="section">
-      <button onclick="mergeImages()">합치기</button>
+      <button onclick="mergeImages()">이미지 합치기</button>
     </div>
 
     <div id="result-container">
-      <span>이미지 생성되었습니다.</span><br />
-      <a id="downloadLink" href="#" download="merged-image.jpg">다운로드</a>
+      <canvas id="resultCanvas"></canvas>
+      <a id="downloadLink" download="merged.jpg">다운로드</a>
     </div>
-
-    <div class="preview" id="preview"></div>
   </div>
 
   <script>
     function toggleMergeType() {
-      document.getElementById('orderedInputs').style.display = 'none';
-      document.getElementById('autoInput').style.display = 'none';
-      const type = document.getElementById('mergeType').value;
-      if (type === 'ordered') {
-        document.getElementById('orderedInputs').style.display = 'block';
-      } else {
-        document.getElementById('autoInput').style.display = 'block';
-      }
+      const type = document.getElementById("mergeType").value;
+      document.getElementById("orderedInputs").style.display = type === "ordered" ? "block" : "none";
+      document.getElementById("autoInput").style.display = type === "auto" ? "block" : "none";
     }
 
     function applyWidth() {
-      const widthInput = document.getElementById("widthInput").value;
-      const value = parseInt(widthInput);
-      if (isNaN(value) || value < 100 || value > 1000) {
-        alert("100~1000 사이의 정수를 입력해주세요.");
-        return;
-      }
-      alert("가로 사이즈가 적용되었습니다: " + value + "px");
+      alert("적용되었습니다. 이미지 합치기를 다시 실행해주세요.");
     }
 
-    function mergeImages() {
-      alert("합치기 기능은 JavaScript + Canvas로 이어집니다. 계속 작업 예정입니다.");
+    function parseFilenameNumber(name) {
+      const match = name.match(/(\d+)(?:\s*\((\d+)\))?/);
+      if (!match) return [Infinity, Infinity];
+      return [parseInt(match[1]), match[2] ? parseInt(match[2]) : -1];
+    }
+
+    async function mergeImages() {
+      const type = document.getElementById("mergeType").value;
+      const width = parseInt(document.getElementById("widthInput").value);
+      const format = document.getElementById("format").value;
+      const input = type === "auto" ? document.getElementById("autoFiles") : document.getElementById("orderedFiles");
+
+      const files = Array.from(input.files);
+      if (!files.length) return alert("이미지를 선택해주세요.");
+
+      if (type === "auto") {
+        files.sort((a, b) => {
+          const na = parseFilenameNumber(a.name);
+          const nb = parseFilenameNumber(b.name);
+          return na[0] - nb[0] || na[1] - nb[1];
+        });
+      }
+
+      const images = await Promise.all(files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }));
+
+      const heights = images.map(img => Math.round(img.height * (width / img.width)));
+      const totalHeight = heights.reduce((a, b) => a + b, 0);
+
+      const canvas = document.getElementById("resultCanvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = width;
+      canvas.height = totalHeight;
+
+      let y = 0;
+      for (let i = 0; i < images.length; i++) {
+        const h = heights[i];
+        ctx.drawImage(images[i], 0, y, width, h);
+        y += h;
+      }
+
+      document.getElementById("result-container").style.display = "block";
+      document.getElementById("downloadLink").href = canvas.toDataURL(format);
     }
   </script>
 </body>
