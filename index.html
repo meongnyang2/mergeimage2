@@ -191,5 +191,133 @@
       document.getElementById("downloadLink").href = canvas.toDataURL(format);
     }
   </script>
+  <script>
+  const mergeTypeSelect = document.getElementById("mergeType");
+  const orderedInputs = document.getElementById("orderedInputs");
+  const autoInput = document.getElementById("autoInput");
+  const fileInput = document.getElementById("fileInput");
+  const widthInput = document.getElementById("widthInput");
+
+  let targetWidth = parseInt(widthInput.value);
+
+  function toggleMergeType() {
+    if (mergeTypeSelect.value === "ordered") {
+      orderedInputs.style.display = "block";
+      autoInput.style.display = "none";
+    } else {
+      orderedInputs.style.display = "none";
+      autoInput.style.display = "block";
+    }
+  }
+
+  function applyWidth() {
+    const val = parseInt(widthInput.value);
+    if (val >= 100 && val <= 1000) {
+      targetWidth = val;
+      alert("적용 완료: " + targetWidth + "px");
+    } else {
+      alert("100~1000 사이의 숫자를 입력하세요.");
+    }
+  }
+
+  function sortFilesByNumber(files) {
+    const regex = /(\d+)(?:\s*\((\d+)\))?/;
+
+    return Array.from(files).sort((a, b) => {
+      const matchA = a.name.match(regex);
+      const matchB = b.name.match(regex);
+
+      const numA = matchA ? parseInt(matchA[1], 10) : 0;
+      const subA = matchA && matchA[2] ? parseInt(matchA[2], 10) : -1;
+
+      const numB = matchB ? parseInt(matchB[1], 10) : 0;
+      const subB = matchB && matchB[2] ? parseInt(matchB[2], 10) : -1;
+
+      if (numA === numB) {
+        return subA - subB;
+      }
+      return numA - numB;
+    });
+  }
+
+  async function mergeImages() {
+    const type = mergeTypeSelect.value;
+    let files = [];
+
+    if (type === "ordered") {
+      for (let i = 1; i <= 10; i++) {
+        const input = document.getElementById("file" + i);
+        if (input.files[0]) {
+          files.push(input.files[0]);
+        }
+      }
+    } else {
+      files = sortFilesByNumber(fileInput.files);
+    }
+
+    if (files.length === 0) {
+      alert("이미지를 선택해주세요.");
+      return;
+    }
+
+    const images = await Promise.all(files.map(file => loadImage(file)));
+    const resizedImages = await Promise.all(images.map(img => resizeImage(img, targetWidth)));
+
+    const totalHeight = resizedImages.reduce((sum, img) => sum + img.height, 0);
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext("2d");
+
+    let y = 0;
+    for (const img of resizedImages) {
+      ctx.drawImage(img, 0, y);
+      y += img.height;
+    }
+
+    const format = document.getElementById("format").value;
+    const dataUrl = canvas.toDataURL(format);
+
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = "merged." + (format === "image/png" ? "png" : "jpg");
+    link.textContent = "다운로드하기";
+    
+    const resultContainer = document.getElementById("result-container");
+    resultContainer.innerHTML = "<p>합치기 완료!</p>";
+    resultContainer.appendChild(link);
+    resultContainer.style.display = "block";
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resizeImage(img, width) {
+    const scale = width / img.width;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = img.height * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    return new Promise(resolve => {
+      const resized = new Image();
+      resized.onload = () => resolve(resized);
+      resized.src = canvas.toDataURL();
+    });
+  }
+</script>
+
 </body>
 </html>
