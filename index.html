@@ -5,54 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>이미지 세로 합치기</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #f0f4f8, #d9e2ec);
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e0eafc, #cfdef3);
       margin: 0;
       padding: 40px 10px;
     }
     .container {
-      max-width: 960px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 30px;
-      background: white;
-      border-radius: 16px;
+      background-color: #ffffffcc;
+      border-radius: 15px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e0e6ed;
+      backdrop-filter: blur(10px);
     }
     h1 {
       text-align: center;
+      margin-bottom: 30px;
       color: #333;
     }
     .section {
       margin-bottom: 25px;
     }
-    label {
+    .section label {
+      font-weight: bold;
       display: block;
       margin-bottom: 8px;
-      font-weight: 600;
     }
-    input[type="number"], select, input[type="file"] {
-      padding: 10px;
-      border: 1px solid #ccc;
+    input[type="number"],
+    select,
+    input[type="file"] {
+      padding: 8px;
       border-radius: 6px;
+      border: 1px solid #ccc;
       width: 100%;
-      margin-bottom: 10px;
+      max-width: 300px;
     }
     button {
-      background: #4a90e2;
-      color: white;
-      border: none;
       padding: 10px 20px;
-      border-radius: 8px;
+      border: none;
+      background-color: #4a90e2;
+      color: white;
+      border-radius: 6px;
       cursor: pointer;
-      transition: background 0.3s;
+      margin-top: 10px;
     }
     button:hover {
-      background: #357ab8;
+      background-color: #357ab8;
     }
     .image-inputs input {
       display: block;
@@ -65,31 +65,22 @@
       border: none;
       max-width: 100%;
       vertical-align: top;
-      image-rendering: pixelated;
+      image-rendering: crisp-edges;
     }
     #result-container {
       margin-top: 20px;
       display: none;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
       text-align: center;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
     }
-    #result-container span {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 10px;
-    }
-    #downloadLink {
-      background: #27ae60;
-      padding: 8px 16px;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
-    }
-    #downloadLink:hover {
-      background: #1e8449;
-    }
-    #customMessageBox {
-      font-weight: bold;
-      background-color: #444;
+    #result-container a {
+      display: inline-block;
+      margin-top: 10px;
+      color: #4a90e2;
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -117,39 +108,67 @@
         <option value="image/jpeg">JPEG</option>
         <option value="image/png">PNG</option>
       </select>
-      <button onclick="mergeImages()">합치기</button>
     </div>
 
     <div class="section" id="orderedInputs">
       <label>순서대로 합치기 (최대 10개 파일까지):</label>
       <div class="image-inputs">
-        <input type="file" id="file1" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file2" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file3" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file4" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file5" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file6" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file7" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file8" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file9" accept="image/png, image/jpeg" onchange="clearPreview()" />
-        <input type="file" id="file10" accept="image/png, image/jpeg" onchange="clearPreview()" />
+        <input type="file" accept="image/*" id="file1" />
+        <input type="file" accept="image/*" id="file2" />
+        <input type="file" accept="image/*" id="file3" />
+        <input type="file" accept="image/*" id="file4" />
+        <input type="file" accept="image/*" id="file5" />
+        <input type="file" accept="image/*" id="file6" />
+        <input type="file" accept="image/*" id="file7" />
+        <input type="file" accept="image/*" id="file8" />
+        <input type="file" accept="image/*" id="file9" />
+        <input type="file" accept="image/*" id="file10" />
       </div>
     </div>
 
     <div class="section" id="autoInput" style="display: none;">
-      <label>파일 업로드:</label>
-      <input type="file" id="fileInput" multiple accept="image/png, image/jpeg" onchange="clearPreview()" />
-      <p style="font-size: 0.9rem; color: #555">EX. 1.jpg, 2.jpg 또는 이미지1.png, 이미지2.png 와 같이 파일명에 숫자가 포함되어 있을 경우, 숫자 기준으로 오름차순 정렬 후 자동 합쳐집니다.<br>새로운 작업을 원할 시 새로고침(F5)을 눌러주세요.</p>
+      <label>파일명 숫자 기준 자동 합치기:</label>
+      <input type="file" id="fileInput" multiple accept="image/*" />
+      <p style="font-size: 0.9em; color: #555">예: 1.jpg, 2.jpg 또는 이미지1.png, 이미지2.png 처럼 숫자 포함 파일명을 기준으로 자동 정렬 후 합쳐집니다.<br>괄호 있는 숫자는 뒤로 정렬됩니다. 새 작업은 새로고침(F5)하세요.</p>
+    </div>
+
+    <div class="section">
+      <button onclick="mergeImages()">합치기</button>
     </div>
 
     <div id="result-container">
-      <span>이미지 생성되었습니다.</span>
+      <span>이미지 생성되었습니다.</span><br />
       <a id="downloadLink" href="#" download="merged-image.jpg">다운로드</a>
     </div>
 
     <div class="preview" id="preview"></div>
   </div>
 
-  <!-- 기존 스크립트는 유지하며 추가 스크립트는 아래에 연결할 수 있습니다. -->
+  <script>
+    function toggleMergeType() {
+      document.getElementById('orderedInputs').style.display = 'none';
+      document.getElementById('autoInput').style.display = 'none';
+      const type = document.getElementById('mergeType').value;
+      if (type === 'ordered') {
+        document.getElementById('orderedInputs').style.display = 'block';
+      } else {
+        document.getElementById('autoInput').style.display = 'block';
+      }
+    }
+
+    function applyWidth() {
+      const widthInput = document.getElementById("widthInput").value;
+      const value = parseInt(widthInput);
+      if (isNaN(value) || value < 100 || value > 1000) {
+        alert("100~1000 사이의 정수를 입력해주세요.");
+        return;
+      }
+      alert("가로 사이즈가 적용되었습니다: " + value + "px");
+    }
+
+    function mergeImages() {
+      alert("합치기 기능은 JavaScript + Canvas로 이어집니다. 계속 작업 예정입니다.");
+    }
+  </script>
 </body>
 </html>
