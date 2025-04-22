@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 합치기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        p {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .menu {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="number"], input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .preview {
+            display: none;
+            text-align: center;
+        }
+
+        #mergedImage {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        #mergeImages {
+            background-color: #28a745;
+            margin-top: 10px;
+        }
+
+        #mergeImages:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>이미지 합치기</h1>
+        <p>1.jpg, 2.jpg 또는 이미지1.png, 이미지2.png와 같이 파일명에 숫자가 포함되어 있을 경우, 숫자 기준으로 오름차순 정렬 후 자동 합쳐집니다.</p>
+        
+        <div class="menu">
+            <button id="mergeButton1">순서대로 합치기</button>
+            <button id="mergeButton2">파일명 숫자 기준 자동 합치기</button>
+        </div>
+
+        <!-- 가로 사이즈 설정 -->
+        <label for="widthInput">가로 사이즈 (100~1000px):</label>
+        <input type="number" id="widthInput" min="100" max="1000">
+
+        <!-- 이미지 업로드 -->
+        <div class="file-upload" id="fileUpload1">
+            <input type="file" id="file1" accept="image/*">
+            <input type="file" id="file2" accept="image/*">
+            <input type="file" id="file3" accept="image/*">
+            <input type="file" id="file4" accept="image/*">
+            <input type="file" id="file5" accept="image/*">
+            <input type="file" id="file6" accept="image/*">
+            <input type="file" id="file7" accept="image/*">
+            <input type="file" id="file8" accept="image/*">
+            <input type="file" id="file9" accept="image/*">
+            <input type="file" id="file10" accept="image/*">
+        </div>
+
+        <button id="mergeImages">합치기</button>
+
+        <!-- 미리보기 -->
+        <div class="preview" id="preview">
+            <h3>미리보기:</h3>
+            <img id="mergedImage" src="" alt="합쳐진 이미지">
+        </div>
+    </div>
+
+    <script>
+        let currentMenu = 1; // 1: 순서대로 합치기, 2: 자동 합치기
+
+        // 메뉴 전환 버튼 클릭 이벤트
+        document.getElementById('mergeButton1').addEventListener('click', () => {
+            currentMenu = 1;
+            resetPage();
+        });
+
+        document.getElementById('mergeButton2').addEventListener('click', () => {
+            currentMenu = 2;
+            resetPage();
+        });
+
+        function resetPage() {
+            document.getElementById('preview').style.display = 'none';
+            document.getElementById('mergedImage').src = '';
+            document.getElementById('widthInput').value = '';
+            document.getElementById('fileUpload1').style.display = currentMenu === 1 ? 'block' : 'none';
+        }
+
+        document.getElementById('mergeImages').addEventListener('click', () => {
+            const width = parseInt(document.getElementById('widthInput').value);
+            if (width < 100 || width > 1000 || isNaN(width)) {
+                alert("가로 사이즈는 100~1000px 사이여야 합니다.");
+                return;
+            }
+
+            let files = [];
+            if (currentMenu === 1) {
+                files = getFilesFromInput();
+            } else if (currentMenu === 2) {
+                files = getFilesFromDrag();
+            }
+
+            if (files.length > 0) {
+                mergeImages(files, width);
+            } else {
+                alert("이미지를 업로드해주세요.");
+            }
+        });
+
+        function getFilesFromInput() {
+            let files = [];
+            for (let i = 1; i <= 10; i++) {
+                const fileInput = document.getElementById(`file${i}`);
+                if (fileInput.files.length > 0) {
+                    files.push(fileInput.files[0]);
+                }
+            }
+            return files;
+        }
+
+        function getFilesFromDrag() {
+            const files = [];
+            // 드래그 앤 드롭을 처리할 코드 추가 필요
+            return files;
+        }
+
+        function mergeImages(files, width) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let totalHeight = 0;
+            const images = [];
+
+            files.forEach((file, index) => {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                images.push(img);
+                
+                img.onload = () => {
+                    totalHeight += img.height;
+                    if (index === files.length - 1) {
+                        canvas.width = width;
+                        canvas.height = totalHeight;
+
+                        let currentY = 0;
+                        images.forEach(img => {
+                            ctx.drawImage(img, 0, currentY, width, img.height * (width / img.width));
+                            currentY += img.height * (width / img.width);
+                        });
+
+                        const finalImage = canvas.toDataURL('image/png');
+                        document.getElementById('mergedImage').src = finalImage;
+                        document.getElementById('preview').style.display = 'block';
+                    }
+                };
+            });
+        }
+    </script>
+</body>
+</html>
